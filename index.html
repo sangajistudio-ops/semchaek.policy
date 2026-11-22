@@ -2,29 +2,434 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>셈책 Semchaek</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="광고도 로그인도 없이 내 휴대폰에 직접 쓰는 가계부. 테마 11종.">
+<link rel="icon" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-:root { --bg: #FAF8F3; --text: #1F2430; --sub: #5A6070; --line: #E3DED3; --accent: #33415F; }
-@media (prefers-color-scheme: dark) { :root { --bg: #171A21; --text: #E6E8EE; --sub: #A3A9B6; --line: #2C313C; --accent: #B9C7E6; } }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.7 -apple-system, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif; }
-:lang(ja) body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif; }
-main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
-h1 { font-size: 1.6rem; margin: 0 0 4px; color: var(--accent); }
-h2 { font-size: 1.1rem; margin: 32px 0 8px; padding-top: 16px; border-top: 1px solid var(--line); }
-p { color: var(--sub); margin: 0 0 8px; }
-ul { padding-left: 1.2em; margin: 0; }
-.lang { text-align: right; margin: 0 0 16px; font-size: .9rem; }
-a { color: var(--accent); }
-li { margin: 6px 0; word-break: keep-all; overflow-wrap: anywhere; }
+/* Layout: 가계부 한 권 — 왼쪽은 글, 오른쪽은 폰 한 대와 공책 색인 탭 11개. 아래는 장부 줄처럼 그은 기능표 */
+:root {
+  --paper: #eef2f1;      /* 서늘한 장부 종이 */
+  --sheet: #f8faf9;
+  --ink: #1c2336;        /* 아이콘의 남색 */
+  --sub: #566074;
+  --rule: #cdd6d6;       /* 장부 줄 */
+  --mint: #4fa58c;       /* 아이콘의 민트 */
+  --rose: #d9776a;       /* 아이콘의 분홍 */
+  --tab: var(--mint);
+  --display: "Black Han Sans", "Noto Sans KR", "Noto Sans JP", sans-serif;
+  --body: "Noto Sans KR", "Noto Sans JP", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131927; --sheet: #1a2233; --ink: #e7ebf3; --sub: #9aa4b8; --rule: #2b3549;
+    --mint: #7fd0b8; --rose: #ef9d90; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131927; --sheet: #1a2233; --ink: #e7ebf3; --sub: #9aa4b8; --rule: #2b3549;
+  --mint: #7fd0b8; --rose: #ef9d90; color-scheme: dark;
+}
+:lang(ja) { --display: "Noto Sans JP", sans-serif; --body: "Noto Sans JP", "Noto Sans KR", -apple-system, sans-serif; }
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 1rem/1.7 var(--body); word-break: keep-all; overflow-wrap: anywhere;
+}
+:lang(ja) body { word-break: normal; line-break: strict; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 4px; }
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+
+/* 머리줄 */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px 8px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.brand img { width: 40px; height: 40px; border-radius: 10px; }
+.brand b { font: 400 1.5rem/1 var(--display); letter-spacing: .02em; }
+.brand small { display: block; font: 500 .72rem/1.2 var(--mono); color: var(--sub); letter-spacing: .08em; text-transform: uppercase; }
+.langs { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet); }
+.langs button {
+  font: 500 .8rem/1 var(--mono); color: var(--sub); background: none; border: 0; cursor: pointer;
+  padding: 8px 12px; border-radius: 999px; min-height: 36px;
+}
+.langs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* 첫 화면 */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: center; padding-block: 40px 72px; }
+.eyebrow { font: 500 .78rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mint); margin: 0 0 20px; }
+h1 {
+  font: 400 clamp(2.6rem, 6.2vw, 4.6rem)/1.08 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.01em;
+}
+:lang(ja) h1 { font-weight: 900; letter-spacing: -.02em; }
+/* 형광펜 자국이 고른 테마 색으로 바뀐다 */
+h1 em {
+  font-style: normal; padding: 0 .08em;
+  background: linear-gradient(transparent 62%, color-mix(in srgb, var(--tab) 38%, transparent) 62% 92%, transparent 92%);
+  transition: background .5s;
+}
+.lead { font-size: 1.12rem; color: var(--sub); max-width: 30em; margin: 24px 0 32px; }
+.store {
+  display: inline-flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 14px;
+  background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 700;
+}
+.store span { font: 500 .72rem/1 var(--mono); opacity: .7; letter-spacing: .06em; }
+.store svg { width: 22px; height: 22px; flex: none; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 28px 0 0; padding: 0; list-style: none; font: 500 .82rem/1.4 var(--mono); color: var(--sub); }
+.facts li::before { content: "✓ "; color: var(--mint); }
+
+/* 폰과 색인 탭 */
+.book { display: flex; justify-content: center; align-items: flex-start; gap: 0; }
+.phone {
+  position: relative; width: min(300px, 70vw); aspect-ratio: 1 / 2; max-width: 100%;
+  border-radius: 34px; padding: 9px; background: #10141f;
+  box-shadow: 0 30px 60px -24px rgba(16, 24, 40, .45), 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+.screen { position: relative; width: 100%; height: 100%; border-radius: 26px; overflow: hidden; background: #000; }
+.screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .45s ease; }
+.screen img.on { opacity: 1; }
+.tabs { display: flex; flex-direction: column; gap: 4px; margin: 28px 0 0 -2px; padding: 0; list-style: none; }
+.tabs button {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font: 500 .82rem/1.2 var(--body); color: var(--sub); text-align: left; cursor: pointer;
+  background: var(--sheet); border: 1px solid var(--rule); border-left: 0;
+  padding: 7px 14px 7px 12px; border-radius: 0 10px 10px 0; min-height: 34px;
+  transition: transform .2s, color .2s, background .2s;
+}
+.tabs button i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
+.tabs button[aria-selected="true"] { color: var(--ink); font-weight: 700; transform: translateX(8px); background: var(--paper); border-color: var(--c); }
+.caption { margin: 16px 0 0; text-align: center; font: 500 .8rem/1.4 var(--mono); color: var(--sub); }
+.caption b { color: var(--ink); font-family: var(--body); }
+.tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: .7rem; border: 1px solid currentColor; }
+.tag.free { color: var(--mint); }
+.tag.paid { color: var(--rose); }
+
+/* 장부 줄 */
+.ledger { padding-block: 56px; border-top: 1px solid var(--rule); }
+h2 { font: 400 clamp(1.7rem, 3.4vw, 2.3rem)/1.2 var(--display); margin: 0 0 8px; text-wrap: balance; }
+:lang(ja) h2 { font-weight: 900; }
+.ledger > .wrap > p { color: var(--sub); margin: 0 0 32px; max-width: 36em; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px; }
+.entry { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--rule); }
+.entry .no { font: 500 .78rem/1.9 var(--mono); color: var(--sub); letter-spacing: .06em; }
+.entry h3 { margin: 0 0 6px; font-size: 1.08rem; font-weight: 700; }
+.entry p { margin: 0; color: var(--sub); font-size: .95rem; }
+
+/* 화면 세 장 */
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 8px; }
+.shots figure { margin: 0; }
+.shots img { display: block; width: 100%; height: auto; border-radius: 20px; border: 1px solid var(--rule); background: var(--sheet); }
+.shots figcaption { margin-top: 12px; font-size: .92rem; color: var(--sub); }
+.shots figcaption b { display: block; color: var(--ink); font-size: 1rem; }
+
+/* 없는 것: 장부에서 지운 줄 */
+.none { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.struck { margin: 0; padding: 0; list-style: none; background: var(--sheet); border: 1px solid var(--rule); border-radius: 16px; padding: 8px 24px; }
+.struck li {
+  display: flex; align-items: baseline; gap: 12px; padding: 14px 0; border-bottom: 1px dashed var(--rule);
+  font-weight: 500;
+}
+.struck li:last-child { border-bottom: 0; }
+.struck li span { text-decoration: line-through; text-decoration-color: var(--rose); text-decoration-thickness: 2px; }
+.struck li::after { content: ""; flex: 1; border-bottom: 1px dotted var(--rule); transform: translateY(-4px); order: 1; }
+.struck li em { order: 2; font: 500 .95rem/1 var(--mono); font-style: normal; color: var(--rose); font-variant-numeric: tabular-nums; }
+.none .note { color: var(--sub); }
+.none .note p { margin: 0 0 14px; }
+
+/* 끝 */
+footer { border-top: 1px solid var(--rule); padding-block: 36px 48px; font-size: .9rem; color: var(--sub); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; }
+.foot ul { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; }
+.foot a { text-decoration: none; border-bottom: 1px solid var(--rule); }
+.foot a:hover { color: var(--ink); border-color: var(--ink); }
+.mail { font-family: var(--mono); color: var(--ink); user-select: all; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 24px 56px; }
+  .book { flex-direction: column; align-items: center; }
+  .tabs { flex-direction: row; flex-wrap: wrap; justify-content: center; margin: 20px 0 0; gap: 6px; }
+  .tabs button { border-left: 1px solid var(--rule); border-radius: 999px; padding: 6px 12px; width: auto; }
+  .tabs button[aria-selected="true"] { transform: none; }
+  .cols, .none { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .none { gap: 28px; }
+  .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .shots img { border-radius: 12px; }
+  .shots figcaption { font-size: .8rem; }
+  .shots figcaption b { font-size: .88rem; }
+}
+@media (max-width: 520px) {
+  .entry { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .shots { grid-template-columns: minmax(0, 1fr); max-width: 300px; margin-inline: auto; gap: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
 </style>
 </head>
 <body>
-<main>
 
-<h1>셈책 Semchaek</h1>
-<p>직접 쓰는 가계부 · Sangaji Studio</p>
-<ul><li><a href="privacy/">개인정보처리방침</a></li><li><a href="privacy/en/">Privacy Policy (English)</a></li><li><a href="privacy/ja/">プライバシーポリシー（日本語）</a></li><li><a href="tokushoho/">特定商取引法に基づく表記</a></li></ul>
+<header class="wrap top">
+  <a class="brand" href="#">
+    <img src="img/icon.png" alt="">
+    <span><b data-t="name">셈책</b><small>Sangaji Studio</small></span>
+  </a>
+  <div class="langs" role="group" aria-label="Language">
+    <button type="button" data-lang="ko" aria-pressed="true">한국어</button>
+    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    <button type="button" data-lang="ja" aria-pressed="false">日本語</button>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <div>
+      <p class="eyebrow" data-t="eyebrow">직접 쓰는 가계부</p>
+      <h1 data-t="h1" data-html>가계부 한 권,<br>표지는 <em>열한 가지</em>.</h1>
+      <p class="lead" data-t="lead">광고도 회원 가입도 없이, 내 휴대폰에 직접 적는 가계부예요. 적은 내용은 휴대폰 밖으로 보내지 않고, 테마마다 글꼴·아이콘·연출이 달라져요.</p>
+      <a class="store" href="#" aria-disabled="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .4.4.7.8.5l10.9-9.4c.3-.3.3-.7 0-1L4.8 2.1c-.4-.2-.8.1-.8.5zm12.9 7.8L6.6 1.6l12.6 7.3-2.3 1.5zm0 3.2 2.3 1.5-12.6 7.3 10.3-8.8zm3.6-3.9-2.6 1.6v1.4l2.6 1.6c.8-.5.8-2.1 0-2.6z"/></svg>
+        <span><span data-t="soon">곧 출시</span><br><b data-t="play">Google Play</b></span>
+      </a>
+      <ul class="facts">
+        <li data-t="f1">광고 없음</li>
+        <li data-t="f2">로그인 없음</li>
+        <li data-t="f3">한국어 · English · 日本語</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="book">
+        <div class="phone"><div class="screen" id="screen"></div></div>
+        <ul class="tabs" id="tabs" role="tablist" aria-label="Themes"></ul>
+      </div>
+      <p class="caption" id="caption" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div class="wrap">
+      <h2 data-t="featH">적는 데 걸리는 건 몇 초면 충분해요</h2>
+      <p data-t="featP">은행이나 카드를 연결하지 않아요. 대신 직접 적는 일이 빠르고 편하도록 만들었어요.</p>
+      <div class="cols" id="features"></div>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div class="wrap">
+      <h2 data-t="shotsH">달력, 통계, 그리고 옮겨 오기</h2>
+      <p data-t="shotsP">쓰던 가계부 앱이나 엑셀 파일도 칸을 알아서 맞춰 가져와요. 저장하기 전에 미리 보고 고칠 수 있어요.</p>
+      <div class="shots">
+        <figure><img src="img/calendar.webp" alt="" loading="lazy" width="540" height="1080"><figcaption><b data-t="s1">달력</b><span data-t="s1d">보태니컬 압화 테마</span></figcaption></figure>
+        <figure><img src="img/stats.webp" alt="" loading="lazy" width="540" height="1080"><figcaption><b data-t="s2">통계</b><span data-t="s2d">다꾸 다이어리 테마</span></figcaption></figure>
+        <figure><img src="img/import.webp" alt="" loading="lazy" width="540" height="1080"><figcaption><b data-t="s3">가져오기</b><span data-t="s3d">xlsx · xls · csv</span></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div class="wrap none">
+      <div class="note">
+        <h2 data-t="noneH">장부에서 지운 것들</h2>
+        <p data-t="noneP1">셈책에는 이런 것이 없어요. 내가 직접 적는 가계부라서요.</p>
+        <p data-t="noneP2">인터넷은 환율을 받을 때(통화와 날짜만 보내요), 테마를 사거나 확인할 때, 켜 둔 구글 드라이브 백업 때만 써요.</p>
+      </div>
+      <ul class="struck" id="struck"></ul>
+    </div>
+  </section>
 </main>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div><b data-t="name">셈책</b> · Sangaji Studio</div>
+      <div><span data-t="contact">문의</span> <span class="mail">sangaji.studio@gmail.com</span></div>
+    </div>
+    <ul>
+      <li><a href="privacy/">개인정보처리방침</a></li>
+      <li><a href="privacy/en/">Privacy Policy</a></li>
+      <li><a href="privacy/ja/">プライバシーポリシー</a></li>
+      <li><a href="tokushoho/">特定商取引法に基づく表記</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+const THEMES = [
+  // [아이디, 색, 무료?, 한국어, 영어, 일본어]
+  ["default", "#2f7a64", true, "기본", "Basic", "ベーシック"],
+  ["chibu", "#9a3b2a", true, "조선 치부책", "Joseon Ledger", "朝鮮の帳簿"],
+  ["neon", "#22c6e0", false, "네온 터미널", "Neon Terminal", "ネオンターミナル"],
+  ["blueprint", "#2d5ea8", false, "청사진 도면", "Blueprint", "青焼き図面"],
+  ["pixel", "#5d8a3a", false, "도트 인벤토리", "Pixel Inventory", "ドットインベントリ"],
+  ["typewriter", "#c0392b", false, "타자기", "Typewriter", "タイプライター"],
+  ["manuscript", "#8c1f2a", false, "중세 필사본", "Medieval Manuscript", "中世の写本"],
+  ["diary", "#3b342d", false, "다꾸 다이어리", "Scrapbook Diary", "デコ手帳"],
+  ["film", "#d98a2b", false, "필름 현상소", "Film Lab", "フィルムラボ"],
+  ["y2k", "#a37ae8", false, "Y2K 홀로그램", "Y2K Hologram", "Y2Kホログラム"],
+  ["botanical", "#9b3445", false, "보태니컬 압화", "Botanical Herbarium", "ボタニカル標本"],
+];
+const L = { ko: 3, en: 4, ja: 5 };
+
+const T = {
+  ko: {
+    name: "셈책", eyebrow: "직접 쓰는 가계부",
+    h1: "가계부 한 권,<br>표지는 <em>열한 가지</em>.",
+    lead: "광고도 회원 가입도 없이, 내 휴대폰에 직접 적는 가계부예요. 적은 내용은 휴대폰 밖으로 보내지 않고, 테마마다 글꼴·아이콘·연출이 달라져요.",
+    soon: "곧 출시", play: "Google Play", f1: "광고 없음", f2: "로그인 없음", f3: "한국어 · English · 日本語",
+    free: "무료", paid: "유료",
+    featH: "적는 데 걸리는 건 몇 초면 충분해요",
+    featP: "은행이나 카드를 연결하지 않아요. 대신 직접 적는 일이 빠르고 편하도록 만들었어요.",
+    features: [
+      ["빠르게 적기", "＋ 하나로 금액부터 바로 입력해요. 예전에 적은 내용은 자동완성되고, 자주 쓰는 지출은 빠른입력 버튼과 홈 화면 위젯으로 한 번에."],
+      ["한눈에 보기", "달마다 목록과 달력, 분류별 통계와 지난달 비교. 월 예산과 남은 돈, 월급날에 맞춘 월 시작일."],
+      ["고정지출과 할부", "매주·매월·매년 반복되는 지출은 알아서 적히고, 카드 할부는 회차까지 보여 줘요."],
+      ["여러 통화", "해외에서 쓴 돈은 그날 환율로 환산해요. 장부마다 기본 통화를 따로 정할 수 있어요."],
+      ["백업과 잠금", "백업 파일 만들기와 복원, 원하면 내 구글 드라이브에 자동 백업. 지문으로 앱 잠금, 지운 내역은 휴지통에서."],
+      ["처음이라도 쉽게", "처음 설치하면 예시 장부로 화면을 직접 눌러 보며 익히는 둘러보기가 있어요."],
+    ],
+    shotsH: "달력, 통계, 그리고 옮겨 오기",
+    shotsP: "쓰던 가계부 앱이나 엑셀 파일도 칸을 알아서 맞춰 가져와요. 저장하기 전에 미리 보고 고칠 수 있어요.",
+    s1: "달력", s1d: "보태니컬 압화 테마", s2: "통계", s2d: "다꾸 다이어리 테마", s3: "가져오기", s3d: "xlsx · xls · csv",
+    noneH: "장부에서 지운 것들",
+    noneP1: "셈책에는 이런 것이 없어요. 내가 직접 적는 가계부라서요.",
+    noneP2: "인터넷은 환율을 받을 때(통화와 날짜만 보내요), 테마를 사거나 확인할 때, 켜 둔 구글 드라이브 백업 때만 써요.",
+    struck: ["광고", "회원 가입", "은행·카드 연동", "문자 읽기", "내 가계부를 서버로 보내기"], zero: "0원",
+    contact: "문의",
+  },
+  en: {
+    name: "Semchaek", eyebrow: "A budget book you write yourself",
+    h1: "One budget book,<br><em>eleven</em> covers.",
+    lead: "No ads, no sign-up. You write every entry yourself, it stays on your phone, and each theme brings its own fonts, icons and animations.",
+    soon: "Coming soon to", play: "Google Play", f1: "No ads", f2: "No login", f3: "English · 한국어 · 日本語",
+    free: "Free", paid: "Paid",
+    featH: "Writing it down takes seconds",
+    featP: "Semchaek does not connect to your bank or cards. It makes writing things down quick instead.",
+    features: [
+      ["Write it down fast", "Tap + and start with the amount. Past entries fill in as you type, and quick buttons and a home screen widget handle the things you buy often."],
+      ["See where it went", "List and calendar for each month, spending by category, this month against last. A monthly budget, and a month that starts on payday."],
+      ["Recurring and installments", "Weekly, monthly and yearly entries add themselves, and card installments show which payment you are on."],
+      ["Many currencies", "Money spent abroad is converted at that day's rate. Each book has its own base currency."],
+      ["Backup and lock", "Back up to a file, or to your own Google Drive if you choose. Lock the app with your fingerprint. Deleted entries wait in the trash."],
+      ["Easy from day one", "A hands-on tour when you first install: try each feature yourself in a sample book."],
+    ],
+    shotsH: "Calendar, stats, and bringing your old budget",
+    shotsP: "Import CSV and Excel files from other budget apps. Semchaek matches the columns, and you check them before anything is saved.",
+    s1: "Calendar", s1d: "Botanical Herbarium theme", s2: "Stats", s2d: "Scrapbook Diary theme", s3: "Import", s3d: "xlsx · xls · csv",
+    noneH: "Crossed out of the book",
+    noneP1: "Semchaek leaves these out. You write every entry yourself.",
+    noneP2: "It goes online only for exchange rates (just the currency and date), theme purchases, and Google Drive backup if you turn it on.",
+    struck: ["Ads", "Sign-up", "Bank and card links", "Reading your texts", "Sending your budget to a server"], zero: "0",
+    contact: "Contact",
+  },
+  ja: {
+    name: "セムチェク", eyebrow: "自分でつける家計簿",
+    h1: "家計簿は一冊、<br>表紙は<em>11種類</em>。",
+    lead: "広告も会員登録もなし。記録はスマホの中だけに残ります。テーマごとにフォント・アイコン・演出が変わる、自分でつける家計簿です。",
+    soon: "まもなく公開", play: "Google Play", f1: "広告なし", f2: "ログイン不要", f3: "日本語 · English · 한국어",
+    free: "無料", paid: "有料",
+    featH: "記録は数秒で",
+    featP: "銀行やカードとは連携しません。そのかわり、自分で書くのが速く楽になるように作りました。",
+    features: [
+      ["さっと記録", "＋を押して金額からすぐ入力。前に書いた内容は候補に出て、よく使う支出はクイックボタンとホーム画面ウィジェットでワンタップ。"],
+      ["ひと目でわかる", "月ごとのリストとカレンダー、カテゴリ別の統計と先月との比較。月の予算と残りの金額、給料日に合わせた月の始まり。"],
+      ["固定費と分割払い", "毎週・毎月・毎年の支出は自動で入力。カードの分割払いは何回目かまで表示します。"],
+      ["いろいろな通貨", "海外で使ったお金はその日のレートで換算。家計簿ごとに基準通貨を設定できます。"],
+      ["バックアップとロック", "ファイルへのバックアップと、任意のGoogleドライブ バックアップ。指紋でアプリをロック、削除した記録はゴミ箱から。"],
+      ["はじめてでも安心", "インストールしたら、サンプルの家計簿で実際に操作しながら使い方を体験できます。"],
+    ],
+    shotsH: "カレンダー、統計、そして取り込み",
+    shotsP: "今まで使っていた家計簿アプリのCSV・Excelファイルも、列を自動で判別して取り込めます。保存前に確認できます。",
+    s1: "カレンダー", s1d: "ボタニカル標本テーマ", s2: "統計", s2d: "デコ手帳テーマ", s3: "取り込み", s3d: "xlsx · xls · csv",
+    noneH: "帳簿から消したもの",
+    noneP1: "セムチェクにはこれがありません。自分でつける家計簿だからです。",
+    noneP2: "インターネットを使うのは、為替レートの取得（通貨と日付だけ）、テーマの購入・確認、任意のGoogleドライブ バックアップのときだけです。",
+    struck: ["広告", "会員登録", "銀行・カード連携", "SMSの読み取り", "家計簿をサーバーへ送ること"], zero: "0円",
+    contact: "お問い合わせ",
+  },
+};
+
+const screen = document.getElementById("screen");
+const tabs = document.getElementById("tabs");
+const caption = document.getElementById("caption");
+let lang = "ko", current = 0, timer = null;
+
+THEMES.forEach((t, i) => {
+  const img = document.createElement("img");
+  img.src = "img/" + t[0] + ".webp"; img.alt = ""; img.width = 540; img.height = 1080;
+  if (i) img.loading = "lazy";
+  screen.appendChild(img);
+  const li = document.createElement("li");
+  const b = document.createElement("button");
+  b.type = "button"; b.setAttribute("role", "tab"); b.style.setProperty("--c", t[1]);
+  b.innerHTML = "<i></i><span></span>";
+  b.addEventListener("click", () => { stop(); show(i); });
+  li.appendChild(b); tabs.appendChild(li);
+});
+
+function show(i) {
+  current = i;
+  const t = THEMES[i];
+  [...screen.children].forEach((img, k) => img.classList.toggle("on", k === i));
+  [...tabs.querySelectorAll("button")].forEach((b, k) => b.setAttribute("aria-selected", String(k === i)));
+  document.documentElement.style.setProperty("--tab", t[1]);
+  const d = T[lang];
+  caption.innerHTML = "<b></b><span class='tag " + (t[2] ? "free'>" : "paid'>") + (t[2] ? d.free : d.paid) + "</span>";
+  caption.querySelector("b").textContent = t[L[lang]];
+}
+
+function setLang(l) {
+  lang = l;
+  const d = T[l];
+  document.documentElement.lang = l;
+  document.title = l === "ko" ? "셈책 Semchaek" : l === "ja" ? "セムチェク Semchaek" : "Semchaek";
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const v = d[el.dataset.t];
+    if (v == null) return;
+    if (el.hasAttribute("data-html")) el.innerHTML = v; else el.textContent = v;
+  });
+  document.querySelectorAll(".langs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === l)));
+  tabs.querySelectorAll("button span").forEach((s, i) => s.textContent = THEMES[i][L[l]]);
+  document.getElementById("features").innerHTML = "";
+  d.features.forEach(([h, p], i) => {
+    const e = document.createElement("div"); e.className = "entry";
+    e.innerHTML = "<div class='no'></div><div><h3></h3><p></p></div>";
+    e.querySelector(".no").textContent = String(i + 1).padStart(2, "0") + " /";
+    e.querySelector("h3").textContent = h; e.querySelector("p").textContent = p;
+    document.getElementById("features").appendChild(e);
+  });
+  const st = document.getElementById("struck"); st.innerHTML = "";
+  d.struck.forEach(s => {
+    const li = document.createElement("li");
+    li.innerHTML = "<span></span><em></em>";
+    li.querySelector("span").textContent = s; li.querySelector("em").textContent = d.zero;
+    st.appendChild(li);
+  });
+  show(current);
+  try { localStorage.setItem("lang", l); } catch (e) {}
+}
+
+document.querySelectorAll(".langs button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.lang)));
+
+function stop() { if (timer) { clearInterval(timer); timer = null; } }
+const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!still) timer = setInterval(() => show((current + 1) % THEMES.length), 2600);
+
+let start = "ko";
+try { start = localStorage.getItem("lang") || ""; } catch (e) {}
+if (!T[start]) {
+  const n = (navigator.language || "").toLowerCase();
+  start = n.startsWith("ko") ? "ko" : n.startsWith("ja") ? "ja" : "en";
+}
+setLang(start);
+</script>
 </body>
 </html>
